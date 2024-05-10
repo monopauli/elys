@@ -191,6 +191,10 @@ import (
 	masterchefmodulekeeper "github.com/elys-network/elys/x/masterchef/keeper"
 	masterchefmoduletypes "github.com/elys-network/elys/x/masterchef/types"
 
+	consumer "github.com/cosmos/interchain-security/v4/x/ccv/consumer"
+	consumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
+
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 
 	"github.com/elys-network/elys/docs"
@@ -293,27 +297,30 @@ var (
 		leveragelpmodule.AppModuleBasic{},
 		masterchefmodule.AppModuleBasic{},
 		estakingmodule.AppModuleBasic{},
+		consumer.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 	)
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:       nil,
-		distrtypes.ModuleName:            nil,
-		icatypes.ModuleName:              nil,
-		ibcfeetypes.ModuleName:           nil,
-		minttypes.ModuleName:             {authtypes.Minter},
-		stakingtypes.BondedPoolName:      {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName:   {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:              {authtypes.Burner},
-		ibctransfertypes.ModuleName:      {authtypes.Minter, authtypes.Burner},
-		commitmentmoduletypes.ModuleName: {authtypes.Minter, authtypes.Burner},
-		burnermoduletypes.ModuleName:     {authtypes.Burner},
-		incentivemoduletypes.ModuleName:  nil,
-		ammmoduletypes.ModuleName:        {authtypes.Minter, authtypes.Burner, authtypes.Staking},
-		wasmmoduletypes.ModuleName:       {authtypes.Burner},
-		stablestaketypes.ModuleName:      {authtypes.Minter, authtypes.Burner},
-		masterchefmoduletypes.ModuleName: {},
+		authtypes.FeeCollectorName:                 nil,
+		distrtypes.ModuleName:                      nil,
+		icatypes.ModuleName:                        nil,
+		ibcfeetypes.ModuleName:                     nil,
+		minttypes.ModuleName:                       {authtypes.Minter},
+		stakingtypes.BondedPoolName:                {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName:             {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:                        {authtypes.Burner},
+		ibctransfertypes.ModuleName:                {authtypes.Minter, authtypes.Burner},
+		commitmentmoduletypes.ModuleName:           {authtypes.Minter, authtypes.Burner},
+		burnermoduletypes.ModuleName:               {authtypes.Burner},
+		incentivemoduletypes.ModuleName:            nil,
+		ammmoduletypes.ModuleName:                  {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		wasmmoduletypes.ModuleName:                 {authtypes.Burner},
+		stablestaketypes.ModuleName:                {authtypes.Minter, authtypes.Burner},
+		masterchefmoduletypes.ModuleName:           {},
+		consumertypes.ConsumerRedistributeName:     nil,
+		consumertypes.ConsumerToSendToProviderName: nil,
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
@@ -370,13 +377,15 @@ type ElysApp struct {
 	GroupKeeper           groupkeeper.Keeper
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 	WasmKeeper            wasmmodulekeeper.Keeper
+	ConsumerKeeper        consumerkeeper.Keeper
 
 	// make scoped keepers public for test purposes
-	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
-	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
-	ScopedIBCFeeKeeper   capabilitykeeper.ScopedKeeper
-	ScopedICAHostKeeper  capabilitykeeper.ScopedKeeper
-	ScopedWasmKeeper     capabilitykeeper.ScopedKeeper
+	ScopedIBCKeeper         capabilitykeeper.ScopedKeeper
+	ScopedTransferKeeper    capabilitykeeper.ScopedKeeper
+	ScopedIBCFeeKeeper      capabilitykeeper.ScopedKeeper
+	ScopedICAHostKeeper     capabilitykeeper.ScopedKeeper
+	ScopedWasmKeeper        capabilitykeeper.ScopedKeeper
+	ScopedICSConsumerKeeper capabilitykeeper.ScopedKeeper
 
 	EpochsKeeper       epochsmodulekeeper.Keeper
 	AssetprofileKeeper assetprofilemodulekeeper.Keeper
@@ -485,6 +494,7 @@ func NewElysApp(
 		leveragelpmoduletypes.StoreKey,
 		masterchefmoduletypes.StoreKey,
 		estakingmoduletypes.StoreKey,
+		consumertypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey, ammmoduletypes.TStoreKey)
@@ -541,6 +551,7 @@ func NewElysApp(
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
 	scopedICAHostKeeper := app.CapabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
 	scopedWasmKeeper := app.CapabilityKeeper.ScopeToModule(wasmmodule.ModuleName)
+	scopedICSConsumerKeeper := app.CapabilityKeeper.ScopeToModule(consumertypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/scopedKeeper
 
 	// add keepers
@@ -676,14 +687,55 @@ func NewElysApp(
 
 	// ... other modules keepers
 
+	// pre-initialize ConsumerKeeper to satsfy ibckeeper.NewKeeper
+	// which would panic on nil or zero keeper
+	// ConsumerKeeper implements StakingKeeper but all function calls result in no-ops so this is safe
+	// communication over IBC is not affected by these changes
+	app.ConsumerKeeper = consumerkeeper.NewNonZeroKeeper(
+		appCodec,
+		keys[consumertypes.StoreKey],
+		app.GetSubspace(consumertypes.ModuleName),
+	)
+
 	// Create IBC Keeper
 	app.IBCKeeper = ibckeeper.NewKeeper(
-		appCodec, keys[ibcexported.StoreKey],
+		appCodec,
+		keys[ibcexported.StoreKey],
 		app.GetSubspace(ibcexported.ModuleName),
-		app.StakingKeeper,
+		app.ConsumerKeeper,
 		app.UpgradeKeeper,
 		scopedIBCKeeper,
 	)
+
+	// app.IBCKeeper = ibckeeper.NewKeeper(
+	// 	appCodec,
+	//  keys[ibcexported.StoreKey],
+	//  app.GetSubspace(ibcexported.ModuleName),
+	// 	&app.ConsumerKeeper,
+	// 	app.UpgradeKeeper,
+	// 	scopedIBCKeeper,
+	// )
+
+	// Create CCV consumer and modules
+	app.ConsumerKeeper = consumerkeeper.NewKeeper(
+		appCodec,
+		keys[consumertypes.StoreKey],
+		app.GetSubspace(consumertypes.ModuleName),
+		scopedICSConsumerKeeper,
+		app.IBCKeeper.ChannelKeeper,
+		&app.IBCKeeper.PortKeeper,
+		app.IBCKeeper.ConnectionKeeper,
+		app.IBCKeeper.ClientKeeper,
+		app.SlashingKeeper,
+		app.BankKeeper,
+		app.AccountKeeper,
+		&app.TransferKeeper,
+		app.IBCKeeper,
+		authtypes.FeeCollectorName,
+	)
+	// register slashing module StakingHooks to the consumer keeper
+	app.ConsumerKeeper = *app.ConsumerKeeper.SetHooks(app.SlashingKeeper.Hooks())
+	consumerModule := consumer.NewAppModule(app.ConsumerKeeper, app.GetSubspace(consumertypes.ModuleName))
 
 	// IBC Fee Module keeper
 	app.IBCFeeKeeper = ibcfeekeeper.NewKeeper(
@@ -736,7 +788,7 @@ func NewElysApp(
 	evidenceKeeper := evidencekeeper.NewKeeper(
 		appCodec,
 		keys[evidencetypes.StoreKey],
-		app.StakingKeeper,
+		&app.ConsumerKeeper,
 		app.SlashingKeeper,
 	)
 	// If evidence needs to be handled for the app, set routes in router here and seal
@@ -1028,7 +1080,9 @@ func NewElysApp(
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
 		AddRoute(ibctransfertypes.ModuleName, transferStack).
 		AddRoute(wasmmoduletypes.ModuleName, wasmStack).
-		AddRoute(oracletypes.ModuleName, oracleIBCModule)
+		AddRoute(oracletypes.ModuleName, oracleIBCModule).
+		AddRoute(consumertypes.ModuleName, consumerModule)
+
 	// this line is used by starport scaffolding # ibc/app/router
 	app.IBCKeeper.SetRouter(ibcRouter)
 
@@ -1091,7 +1145,9 @@ func NewElysApp(
 
 	app.mm = module.NewManager(
 		genutil.NewAppModule(
-			app.AccountKeeper, app.StakingKeeper, app.BaseApp.DeliverTx,
+			app.AccountKeeper,
+			app.ConsumerKeeper,
+			app.BaseApp.DeliverTx,
 			encodingConfig.TxConfig,
 		),
 		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
@@ -1131,6 +1187,7 @@ func NewElysApp(
 		leveragelpModule,
 		masterchefModule,
 		estakingModule,
+		consumerModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 
@@ -1179,6 +1236,7 @@ func NewElysApp(
 		leveragelpmoduletypes.ModuleName,
 		masterchefmoduletypes.ModuleName,
 		estakingmoduletypes.ModuleName,
+		consumertypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/beginBlockers
 	)
 
@@ -1222,6 +1280,7 @@ func NewElysApp(
 		leveragelpmoduletypes.ModuleName,
 		masterchefmoduletypes.ModuleName,
 		estakingmoduletypes.ModuleName,
+		consumertypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/endBlockers
 	)
 
@@ -1269,6 +1328,7 @@ func NewElysApp(
 		leveragelpmoduletypes.ModuleName,
 		masterchefmoduletypes.ModuleName,
 		estakingmoduletypes.ModuleName,
+		consumertypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 	}
 	app.mm.SetOrderInitGenesis(genesisModuleOrder...)
@@ -1323,6 +1383,7 @@ func NewElysApp(
 	app.ScopedTransferKeeper = scopedTransferKeeper
 	app.ScopedWasmKeeper = scopedWasmKeeper
 	app.ScopedICAHostKeeper = scopedICAHostKeeper
+	app.ScopedICSConsumerKeeper = scopedICSConsumerKeeper
 
 	// In v0.46, the SDK introduces _postHandlers_. PostHandlers are like
 	// antehandlers, but are run _after_ the `runMsgs` execution. They are also
@@ -1376,6 +1437,7 @@ func (app *ElysApp) setAnteHandler(txConfig client.TxConfig, wasmConfig wasmmodu
 			ParameterKeeper:   app.ParameterKeeper,
 			WasmConfig:        &wasmConfig,
 			TXCounterStoreKey: txCounterStoreKey,
+			ConsumerKeeper:    app.ConsumerKeeper,
 		},
 	)
 	if err != nil {
@@ -1565,6 +1627,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(stablestaketypes.ModuleName)
 	paramsKeeper.Subspace(leveragelpmoduletypes.ModuleName)
 	paramsKeeper.Subspace(masterchefmoduletypes.ModuleName)
+	paramsKeeper.Subspace(consumertypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 
 	return paramsKeeper

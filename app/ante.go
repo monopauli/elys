@@ -16,6 +16,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ibcante "github.com/cosmos/ibc-go/v7/modules/core/ante"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
+	icsconsumerkeeper "github.com/cosmos/interchain-security/v4/x/ccv/consumer/keeper"
 	parameterkeeper "github.com/elys-network/elys/x/parameter/keeper"
 )
 
@@ -30,6 +31,7 @@ type HandlerOptions struct {
 	WasmConfig        *wasmtypes.WasmConfig
 	ParameterKeeper   parameterkeeper.Keeper
 	TXCounterStoreKey storetypes.StoreKey
+	ConsumerKeeper    icsconsumerkeeper.Keeper
 }
 
 type MinCommissionDecorator struct {
