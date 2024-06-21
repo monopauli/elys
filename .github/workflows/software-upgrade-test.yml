@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - ccv-v0.32.0
 
 jobs:
   retrieve-latest-tag:
