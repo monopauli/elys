@@ -7,10 +7,11 @@ on:
       - develop
       - devnet
       - main
+      - ccv-v0.35.0-test
 
 jobs:
   create-new-snapshot:
-    runs-on: elys-runner
+    runs-on: self-hosted
 
     steps:
       - name: Checkout repository
@@ -55,22 +56,22 @@ jobs:
           NEW_BINARY_PATH=./build/elysd
           echo "NEW_BINARY_PATH=$NEW_BINARY_PATH" >> $GITHUB_ENV
 
-      - name: Check submit new proposal from cache exists
-        uses: elys-network/actions-cache-s3@eba1d2b54699fda7ee03d826049bc67dcf514887
-        id: cache-submit-new-proposal
-        with:
-          path: |
-            /home/runner/.elys
-            /home/runner/.elys2
-          key: ${{ runner.os }}-submit-new-proposal-${{ env.LATEST_TAG }}
-          lookup-only: true
-          aws-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
-          aws-endpoint: ${{ secrets.R2_ENDPOINT }}
-          aws-s3-bucket: ${{ secrets.R2_BUCKET_NAME }}
-          aws-region: auto
-          aws-s3-bucket-endpoint: false
-          aws-s3-force-path-style: true
+      # - name: Check submit new proposal from cache exists
+      #   uses: elys-network/actions-cache-s3@eba1d2b54699fda7ee03d826049bc67dcf514887
+      #   id: cache-submit-new-proposal
+      #   with:
+      #     path: |
+      #       /home/runner/.elys
+      #       /home/runner/.elys2
+      #     key: ${{ runner.os }}-submit-new-proposal-${{ env.LATEST_TAG }}
+      #     lookup-only: true
+      #     aws-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
+      #     aws-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
+      #     aws-endpoint: ${{ secrets.R2_ENDPOINT }}
+      #     aws-s3-bucket: ${{ secrets.R2_BUCKET_NAME }}
+      #     aws-region: auto
+      #     aws-s3-bucket-endpoint: false
+      #     aws-s3-force-path-style: true
 
       - name: Retrieve info.json and set snapshot path
         run: |
@@ -90,59 +91,59 @@ jobs:
           # set snapshot file path
           SNAPSHOT_FILE_PATH=/tmp/snapshot.tar.lz4
           echo "SNAPSHOT_FILE_PATH=$SNAPSHOT_FILE_PATH" >> $GITHUB_ENV
-        if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true'
+        #if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true'
 
-      - name: Check snapshot from cache exists
-        uses: elys-network/actions-cache-s3@eba1d2b54699fda7ee03d826049bc67dcf514887
-        id: cache-snapshot-exists
-        with:
-          path: |
-            ${{ env.SNAPSHOT_FILE_PATH }}
-          key: ${{ runner.os }}-snapshot-${{ env.LATEST_TAG }}
-          lookup-only: true
-          aws-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
-          aws-endpoint: ${{ secrets.R2_ENDPOINT }}
-          aws-s3-bucket: ${{ secrets.R2_BUCKET_NAME }}
-          aws-region: auto
-          aws-s3-bucket-endpoint: false
-          aws-s3-force-path-style: true
-        if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true'
+      # - name: Check snapshot from cache exists
+      #   uses: elys-network/actions-cache-s3@eba1d2b54699fda7ee03d826049bc67dcf514887
+      #   id: cache-snapshot-exists
+      #   with:
+      #     path: |
+      #       ${{ env.SNAPSHOT_FILE_PATH }}
+      #     key: ${{ runner.os }}-snapshot-${{ env.LATEST_TAG }}
+      #     lookup-only: true
+      #     aws-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
+      #     aws-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
+      #     aws-endpoint: ${{ secrets.R2_ENDPOINT }}
+      #     aws-s3-bucket: ${{ secrets.R2_BUCKET_NAME }}
+      #     aws-region: auto
+      #     aws-s3-bucket-endpoint: false
+      #     aws-s3-force-path-style: true
+      #   if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true'
 
       - name: Download snapshot
         run: |
           curl -L $SNAPSHOT_DOWNLOAD_URL -o $SNAPSHOT_FILE_PATH
-        if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true' && steps.cache-snapshot-exists.outputs.cache-hit != 'true'
+        #if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true' && steps.cache-snapshot-exists.outputs.cache-hit != 'true'
 
-      - name: Save snapshot to cache
-        uses: elys-network/actions-cache-s3/save@eba1d2b54699fda7ee03d826049bc67dcf514887
-        with:
-          path: |
-            ${{ env.SNAPSHOT_FILE_PATH }}
-          key: ${{ runner.os }}-snapshot-${{ env.LATEST_TAG }}
-          aws-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
-          aws-endpoint: ${{ secrets.R2_ENDPOINT }}
-          aws-s3-bucket: ${{ secrets.R2_BUCKET_NAME }}
-          aws-region: auto
-          aws-s3-bucket-endpoint: false
-          aws-s3-force-path-style: true
-        if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true' && steps.cache-snapshot-exists.outputs.cache-hit != 'true'
+      # - name: Save snapshot to cache
+      #   uses: elys-network/actions-cache-s3/save@eba1d2b54699fda7ee03d826049bc67dcf514887
+      #   with:
+      #     path: |
+      #       ${{ env.SNAPSHOT_FILE_PATH }}
+      #     key: ${{ runner.os }}-snapshot-${{ env.LATEST_TAG }}
+      #     aws-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
+      #     aws-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
+      #     aws-endpoint: ${{ secrets.R2_ENDPOINT }}
+      #     aws-s3-bucket: ${{ secrets.R2_BUCKET_NAME }}
+      #     aws-region: auto
+      #     aws-s3-bucket-endpoint: false
+      #     aws-s3-force-path-style: true
+      #   if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true' && steps.cache-snapshot-exists.outputs.cache-hit != 'true'
 
-      - name: Restore snapshot from cache
-        uses: elys-network/actions-cache-s3/restore@eba1d2b54699fda7ee03d826049bc67dcf514887
-        with:
-          path: |
-            ${{ env.SNAPSHOT_FILE_PATH }}
-          key: ${{ runner.os }}-snapshot-${{ env.LATEST_TAG }}
-          aws-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
-          aws-endpoint: ${{ secrets.R2_ENDPOINT }}
-          aws-s3-bucket: ${{ secrets.R2_BUCKET_NAME }}
-          aws-region: auto
-          aws-s3-bucket-endpoint: false
-          aws-s3-force-path-style: true
-        if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true' && steps.cache-snapshot-exists.outputs.cache-hit == 'true'
+      # - name: Restore snapshot from cache
+      #   uses: elys-network/actions-cache-s3/restore@eba1d2b54699fda7ee03d826049bc67dcf514887
+      #   with:
+      #     path: |
+      #       ${{ env.SNAPSHOT_FILE_PATH }}
+      #     key: ${{ runner.os }}-snapshot-${{ env.LATEST_TAG }}
+      #     aws-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
+      #     aws-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
+      #     aws-endpoint: ${{ secrets.R2_ENDPOINT }}
+      #     aws-s3-bucket: ${{ secrets.R2_BUCKET_NAME }}
+      #     aws-region: auto
+      #     aws-s3-bucket-endpoint: false
+      #     aws-s3-force-path-style: true
+      #   if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true' && steps.cache-snapshot-exists.outputs.cache-hit == 'true'
 
       - name: Chain snapshot and export
         run: |
@@ -151,7 +152,7 @@ jobs:
             ${OLD_BINARY_PATH} \
             --timeout-next-block 100000 \
             --timeout-wait-for-node 100000
-        if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true'
+        #if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true'
 
       - name: Chain initialization
         run: |
@@ -159,7 +160,7 @@ jobs:
             ${OLD_BINARY_PATH} \
             --timeout-next-block 100000 \
             --timeout-wait-for-node 100000
-        if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true'
+        #if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true'
 
       - name: Create second validator
         run: |
@@ -174,7 +175,7 @@ jobs:
           GOMEMLIMIT=8GiB ${POST_UPGRADE_SNAPSHOT_GENERATOR_PATH} prepare-validator-data \
             --timeout-next-block 100000 \
             --timeout-wait-for-node 100000
-        if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true'
+        #if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true'
 
       - name: Submit new proposal
         run: |
@@ -183,7 +184,7 @@ jobs:
             ${NEW_BINARY_PATH} \
             --timeout-next-block 100000 \
             --timeout-wait-for-node 100000
-        if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true'
+        #if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true'
 
       - name: Save submit new proposal to cache
         uses: elys-network/actions-cache-s3/save@eba1d2b54699fda7ee03d826049bc67dcf514887
@@ -199,7 +200,7 @@ jobs:
           aws-region: auto
           aws-s3-bucket-endpoint: false
           aws-s3-force-path-style: true
-        if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true'
+        #if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true'
 
       - name: Restore submit new proposal from cache
         uses: elys-network/actions-cache-s3/restore@eba1d2b54699fda7ee03d826049bc67dcf514887
@@ -215,7 +216,7 @@ jobs:
           aws-region: auto
           aws-s3-bucket-endpoint: false
           aws-s3-force-path-style: true
-        if: steps.cache-submit-new-proposal.outputs.cache-hit == 'true'
+        #if: steps.cache-submit-new-proposal.outputs.cache-hit == 'true'
 
       - name: Upgrade to new binary
         run: |
@@ -235,15 +236,15 @@ jobs:
           cd /home/runner
           tar -cf - .elys | lz4 -z - > "$NEW_SNAPSHOT_PATH"
 
-      - name: Upload snapshot
-        env:
-          R2_ACCESS_KEY: ${{ secrets.R2_ACCESS_KEY }}
-          R2_SECRET_KEY: ${{ secrets.R2_SECRET_KEY }}
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
-        run: |
-          ${POST_UPGRADE_SNAPSHOT_GENERATOR_PATH} upload-snapshot $NEW_SNAPSHOT_PATH
+      # - name: Upload snapshot
+      #   env:
+      #     R2_ACCESS_KEY: ${{ secrets.R2_ACCESS_KEY }}
+      #     R2_SECRET_KEY: ${{ secrets.R2_SECRET_KEY }}
+      #     R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      #     R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+      #   run: |
+      #     ${POST_UPGRADE_SNAPSHOT_GENERATOR_PATH} upload-snapshot $NEW_SNAPSHOT_PATH
 
-      - name: Info about the snapshot
-        run: |
-          echo "Snapshot URL: https://snapshots.elys.network/$NEW_SNAPSHOT_FILENAME"
+      # - name: Info about the snapshot
+      #   run: |
+      #     echo "Snapshot URL: https://snapshots.elys.network/$NEW_SNAPSHOT_FILENAME"
