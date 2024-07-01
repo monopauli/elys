@@ -145,14 +145,16 @@ jobs:
       #     aws-s3-force-path-style: true
       #   if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true' && steps.cache-snapshot-exists.outputs.cache-hit == 'true'
 
-      - name: Chain snapshot and export
-        run: |
-          GOMEMLIMIT=8GiB ${POST_UPGRADE_SNAPSHOT_GENERATOR_PATH} chain-snapshot-export \
-            ${SNAPSHOT_FILE_PATH} \
-            ${OLD_BINARY_PATH} \
-            --timeout-next-block 100000 \
-            --timeout-wait-for-node 100000
-        #if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true'
+      - name: Extract snapshot
+        run: tar -I lz4 -xvf /tmp/snapshot.tar.lz4 -C /home/node/.elys
+      # - name: Chain snapshot and export
+      #   run: |
+      #     GOMEMLIMIT=8GiB ${POST_UPGRADE_SNAPSHOT_GENERATOR_PATH} chain-snapshot-export \
+      #       ${SNAPSHOT_FILE_PATH} \
+      #       ${OLD_BINARY_PATH} \
+      #       --timeout-next-block 100000 \
+      #       --timeout-wait-for-node 100000
+      #   #if: steps.cache-submit-new-proposal.outputs.cache-hit != 'true'
 
       - name: Chain initialization
         run: |
