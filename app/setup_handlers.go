@@ -6,25 +6,22 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	m "github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/cosmos/cosmos-sdk/version"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-
 	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
 )
 
 func SetupHandlers(app *ElysApp) {
 	setUpgradeHandler(app)
+
 	loadUpgradeStore(app)
 }
 
 func setUpgradeHandler(app *ElysApp) {
-	upgradeName := "v999.999.999" // Make sure this matches your upgrade plan's name
 	app.UpgradeKeeper.SetUpgradeHandler(
-		upgradeName,
+		version.Version,
 		func(ctx sdk.Context, plan upgradetypes.Plan, vm m.VersionMap) (m.VersionMap, error) {
-			app.Logger().Info("Running upgrade handler for " + upgradeName)
-
-			// Initialize new stores or modules here
-			// Add any other initialization logic needed for the upgrade
+			app.Logger().Info("Running upgrade handler for " + version.Version)
 
 			return app.mm.RunMigrations(ctx, app.configurator, vm)
 		},
@@ -59,5 +56,5 @@ func loadUpgradeStore(app *ElysApp) {
 func shouldLoadUpgradeStore(app *ElysApp, upgradeInfo upgradetypes.Plan) bool {
 	currentHeight := app.LastBlockHeight()
 	fmt.Printf("Current block height: %d, Upgrade height: %d\n", currentHeight, upgradeInfo.Height)
-	return upgradeInfo.Name == "v999.999.999" && currentHeight == upgradeInfo.Height && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height)
+	return upgradeInfo.Name == version.Version && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height)
 }
