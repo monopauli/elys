@@ -779,7 +779,7 @@ func NewElysApp(
 		app.SlashingKeeper,
 		app.BankKeeper,
 		app.AccountKeeper,
-		app.TransferKeeper, // TODO: Check if underlying Keeper needs to be used
+		&app.TransferKeeper,
 		app.IBCKeeper,
 		authtypes.FeeCollectorName,
 	)

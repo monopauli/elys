@@ -56,5 +56,6 @@ func loadUpgradeStore(app *ElysApp) {
 func shouldLoadUpgradeStore(app *ElysApp, upgradeInfo upgradetypes.Plan) bool {
 	currentHeight := app.LastBlockHeight()
 	fmt.Printf("Current block height: %d, Upgrade height: %d\n", currentHeight, upgradeInfo.Height)
-	return upgradeInfo.Name == version.Version && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height)
+	fmt.Printf("Upgrade Name: %s, Version: %s", upgradeInfo.Name, version.Version)
+	return true
 }
