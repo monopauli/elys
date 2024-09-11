@@ -8,6 +8,7 @@ import (
 	m "github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
 )
 
 const (
@@ -50,6 +51,7 @@ func loadUpgradeStore(app *ElysApp) {
 
 	if shouldLoadUpgradeStore(app, upgradeInfo) {
 		storeUpgrades := storetypes.StoreUpgrades{
+			Added: []string{consumertypes.ModuleName},
 			// Added: []string{},
 			// Deleted: []string{},
 		}
