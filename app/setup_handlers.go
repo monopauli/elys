@@ -9,6 +9,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	tradeshieldtypes "github.com/elys-network/elys/x/tradeshield/types"
+
+	//CCV
+	consumertypes "github.com/cosmos/interchain-security/v4/x/ccv/consumer/types"
 )
 
 const (
@@ -51,7 +54,7 @@ func loadUpgradeStore(app *ElysApp) {
 
 	if shouldLoadUpgradeStore(app, upgradeInfo) {
 		storeUpgrades := storetypes.StoreUpgrades{
-			Added: []string{tradeshieldtypes.StoreKey},
+			Added: []string{tradeshieldtypes.StoreKey, consumertypes.StoreKey},
 			// Deleted: []string{},
 		}
 		app.Logger().Info(fmt.Sprintf("Setting store loader with height %d and store upgrades: %+v\n", upgradeInfo.Height, storeUpgrades))
