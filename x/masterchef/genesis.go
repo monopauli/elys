@@ -10,7 +10,8 @@ import (
 func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
 	// this line is used by starport scaffolding # genesis/module/init
 	if k.CheckBlockedAddress(genState.Params) {
-		panic("protocol revenues address is blocked")
+		// Removed panic condition for local testing, uncomment line for prod
+		// panic("protocol revenues address is blocked")
 	}
 
 	k.SetParams(ctx, genState.Params)

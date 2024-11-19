@@ -91,6 +91,10 @@ import (
 	tokenomicsmodule "github.com/elys-network/elys/x/tokenomics"
 	tradeshieldmodule "github.com/elys-network/elys/x/tradeshield"
 	"github.com/elys-network/elys/x/transferhook"
+
+	//CCV modules
+	ccvconsumer "github.com/cosmos/interchain-security/v6/x/ccv/consumer"
+	ccvconsumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
 )
 
 // module account permissions
@@ -107,11 +111,13 @@ var maccPerms = map[string][]string{
 
 	minttypes.ModuleName: {authtypes.Minter}, // Need in writing test cases to initialize accounts with balances, otherwise no use
 
-	commitmentmoduletypes.ModuleName: {authtypes.Minter, authtypes.Burner},
-	burnermoduletypes.ModuleName:     {authtypes.Burner},
-	ammmoduletypes.ModuleName:        {authtypes.Minter, authtypes.Burner, authtypes.Staking},
-	stablestaketypes.ModuleName:      {authtypes.Minter, authtypes.Burner},
-	masterchefmoduletypes.ModuleName: {authtypes.Minter, authtypes.Burner},
+	commitmentmoduletypes.ModuleName:              {authtypes.Minter, authtypes.Burner},
+	burnermoduletypes.ModuleName:                  {authtypes.Burner},
+	ammmoduletypes.ModuleName:                     {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+	stablestaketypes.ModuleName:                   {authtypes.Minter, authtypes.Burner},
+	masterchefmoduletypes.ModuleName:              {authtypes.Minter, authtypes.Burner},
+	ccvconsumertypes.ConsumerRedistributeName:     {authtypes.Burner},
+	ccvconsumertypes.ConsumerToSendToProviderName: nil,
 }
 
 func appModules(
@@ -168,6 +174,7 @@ func appModules(
 		perpetualmodule.NewAppModule(appCodec, app.PerpetualKeeper, app.AccountKeeper, app.BankKeeper),
 		tiermodule.NewAppModule(appCodec, app.TierKeeper, app.AccountKeeper, app.BankKeeper),
 		tradeshieldmodule.NewAppModule(appCodec, app.TradeshieldKeeper, app.AccountKeeper, app.BankKeeper),
+		ccvconsumer.NewAppModule(app.ConsumerKeeper, app.GetSubspace(ccvconsumertypes.ModuleName)),
 	}
 }
 
@@ -259,6 +266,7 @@ func orderBeginBlockers() []string {
 		govtypes.ModuleName,
 		crisistypes.ModuleName,
 		ibcexported.ModuleName,
+		ccvconsumertypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		icatypes.ModuleName,
 		ibcfeetypes.ModuleName,
@@ -305,6 +313,7 @@ func orderEndBlockers() []string {
 		epochsmoduletypes.ModuleName,
 		clockmoduletypes.ModuleName,
 		ibcexported.ModuleName,
+		ccvconsumertypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		icatypes.ModuleName,
 		capabilitytypes.ModuleName,
@@ -366,6 +375,7 @@ func orderInitBlockers() []string {
 		genutiltypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibcexported.ModuleName,
+		ccvconsumertypes.ModuleName,
 		icatypes.ModuleName,
 		ibcfeetypes.ModuleName,
 		evidencetypes.ModuleName,

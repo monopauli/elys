@@ -1,9 +1,14 @@
 package app
 
 import (
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"cosmossdk.io/client/v2/autocli"
 	"cosmossdk.io/core/appmodule"
-	"fmt"
 	"github.com/CosmWasm/wasmd/x/wasm"
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
@@ -12,10 +17,6 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/elys-network/elys/app/keepers"
 	"github.com/spf13/cast"
-	"io"
-	"os"
-	"path/filepath"
-	"strings"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmos "github.com/cometbft/cometbft/libs/os"
@@ -51,10 +52,14 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/elys-network/elys/app/ante"
+
+	//CCV modules
+
+	ccvconsumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
+
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 
 	"github.com/elys-network/elys/docs"
@@ -418,7 +423,10 @@ func (app *ElysApp) ModuleAccountAddrs() map[string]bool {
 // addresses.
 func (app *ElysApp) BlockedModuleAccountAddrs() map[string]bool {
 	modAccAddrs := app.ModuleAccountAddrs()
-	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	// remove fee-poll from group of blocked addresses for the consumer chain to be able
+	// to send tokens to the provider chain
+	delete(modAccAddrs, authtypes.NewModuleAddress(
+		ccvconsumertypes.ConsumerToSendToProviderName).String())
 
 	return modAccAddrs
 }

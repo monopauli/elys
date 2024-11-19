@@ -11,6 +11,9 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+
+	//CCV
+	consumerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/consumer/keeper"
 )
 
 // HandlerOptions extend the SDK's AnteHandler options by requiring the IBC
@@ -21,6 +24,7 @@ type HandlerOptions struct {
 	Cdc                   codec.BinaryCodec
 	IBCKeeper             *ibckeeper.Keeper
 	StakingKeeper         *stakingkeeper.Keeper
+	ConsumerKeeper        consumerkeeper.Keeper
 	TXCounterStoreService corestoretypes.KVStoreService
 	WasmConfig            *wasmtypes.WasmConfig
 
