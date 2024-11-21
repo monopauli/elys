@@ -41,6 +41,9 @@ import (
 	tokenomicsmoduletypes "github.com/elys-network/elys/x/tokenomics/types"
 	tradeshieldmoduletypes "github.com/elys-network/elys/x/tradeshield/types"
 	transferhooktypes "github.com/elys-network/elys/x/transferhook/types"
+
+	//CCV
+	ccvconsumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
 )
 
 func (appKeepers *AppKeepers) GenerateKeys() {
@@ -67,9 +70,7 @@ func (appKeepers *AppKeepers) GenerateKeys() {
 		authz.ModuleName,
 		group.StoreKey,
 		consensusparamtypes.StoreKey,
-
-		//ccvconsumertypes.StoreKey,
-
+		ccvconsumertypes.StoreKey,
 		epochsmoduletypes.StoreKey,
 		assetprofilemoduletypes.StoreKey,
 		oracletypes.StoreKey,

@@ -104,6 +104,12 @@ import (
 	"github.com/elys-network/elys/x/transferhook"
 	transferhookkeeper "github.com/elys-network/elys/x/transferhook/keeper"
 	transferhooktypes "github.com/elys-network/elys/x/transferhook/types"
+
+	//CCV
+	ccvconsumer "github.com/cosmos/interchain-security/v6/x/ccv/consumer"
+	ccvconsumerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/consumer/keeper"
+	ccvconsumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
@@ -123,6 +129,7 @@ type AppKeepers struct {
 	CrisisKeeper     *crisiskeeper.Keeper
 	UpgradeKeeper    *upgradekeeper.Keeper
 	ParamsKeeper     paramskeeper.Keeper
+	ConsumerKeeper   ccvconsumerkeeper.Keeper
 
 	// IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
 	IBCKeeper             *ibckeeper.Keeper
@@ -147,7 +154,7 @@ type AppKeepers struct {
 	ScopedICAControllerKeeper capabilitykeeper.ScopedKeeper
 	ScopedIBCFeeKeeper        capabilitykeeper.ScopedKeeper
 	ScopedOracleKeeper        capabilitykeeper.ScopedKeeper
-	//ScopedCCVConsumerKeeper   capabilitykeeper.ScopedKeeper
+	ScopedCCVConsumerKeeper   capabilitykeeper.ScopedKeeper
 
 	EpochsKeeper        *epochsmodulekeeper.Keeper
 	AssetprofileKeeper  assetprofilemodulekeeper.Keeper
@@ -241,12 +248,18 @@ func NewAppKeeper(
 		app.memKeys[capabilitytypes.MemStoreKey],
 	)
 
+	app.ConsumerKeeper = ccvconsumerkeeper.NewNonZeroKeeper(
+		appCodec,
+		app.keys[ccvconsumertypes.StoreKey],
+		app.GetSubspace(ccvconsumertypes.ModuleName),
+	)
+
 	app.ScopedIBCKeeper = app.CapabilityKeeper.ScopeToModule(ibcexported.ModuleName)
 	app.ScopedICAHostKeeper = app.CapabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
 	app.ScopedICAControllerKeeper = app.CapabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
 	app.ScopedTransferKeeper = app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
 	app.ScopedOracleKeeper = app.CapabilityKeeper.ScopeToModule(oracletypes.ModuleName)
-	//app.ScopedCCVConsumerKeeper = app.CapabilityKeeper.ScopeToModule(ccvconsumertypes.ModuleName)
+	app.ScopedCCVConsumerKeeper = app.CapabilityKeeper.ScopeToModule(ccvconsumertypes.ModuleName)
 
 	// Add normal keepers
 	app.AccountKeeper = authkeeper.NewAccountKeeper(
@@ -454,6 +467,26 @@ func NewAppKeeper(
 	)
 
 	oracleIBCModule := oraclemodule.NewIBCModule(app.OracleKeeper)
+
+	app.ConsumerKeeper = ccvconsumerkeeper.NewKeeper(
+		appCodec,
+		app.keys[ccvconsumertypes.StoreKey],
+		app.GetSubspace(ccvconsumertypes.ModuleName),
+		app.ScopedCCVConsumerKeeper,
+		app.IBCKeeper.ChannelKeeper,
+		app.IBCKeeper.PortKeeper,
+		app.IBCKeeper.ConnectionKeeper,
+		app.IBCKeeper.ClientKeeper,
+		app.SlashingKeeper,
+		app.BankKeeper,
+		app.AccountKeeper,
+		&app.TransferKeeper,
+		app.IBCKeeper,
+		authtypes.FeeCollectorName,
+		app.IBCKeeper.GetAuthority(),
+		app.StakingKeeper.ValidatorAddressCodec(),
+		app.StakingKeeper.ConsensusAddressCodec(),
+	)
 
 	app.EpochsKeeper = epochsmodulekeeper.NewKeeper(
 		appCodec,
@@ -674,6 +707,8 @@ func NewAppKeeper(
 	transferStack = transferhook.NewIBCModule(app.TransferhookKeeper, transferStack)
 	transferStack = ibcfee.NewIBCMiddleware(transferStack, app.IBCFeeKeeper)
 
+	consumerModule := ccvconsumer.NewAppModule(app.ConsumerKeeper, app.GetSubspace(ccvconsumertypes.ModuleName))
+
 	// Create ICAHost Stack
 	var icaHostStack porttypes.IBCModule = icahost.NewIBCModule(app.ICAHostKeeper)
 
@@ -685,7 +720,8 @@ func NewAppKeeper(
 		AddRoute(icahosttypes.SubModuleName, icaHostStack).
 		AddRoute(icacontrollertypes.SubModuleName, icaControllerStack).
 		AddRoute(ibctransfertypes.ModuleName, transferStack).
-		AddRoute(oracletypes.ModuleName, oracleIBCModule)
+		AddRoute(oracletypes.ModuleName, oracleIBCModule).
+		AddRoute(ccvconsumertypes.ModuleName, consumerModule)
 
 	app.IBCKeeper.SetRouter(ibcRouter)
 
@@ -747,6 +783,8 @@ func NewAppKeeper(
 		),
 	)
 
+	app.ConsumerKeeper.SetHooks(app.SlashingKeeper.Hooks())
+
 	return app
 
 }
@@ -777,7 +815,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName).WithKeyTable(ibctransfertypes.ParamKeyTable())
 	paramsKeeper.Subspace(icacontrollertypes.SubModuleName).WithKeyTable(icacontrollertypes.ParamKeyTable())
 	paramsKeeper.Subspace(icahosttypes.SubModuleName).WithKeyTable(icahosttypes.ParamKeyTable())
-	//paramsKeeper.Subspace(ccvconsumertypes.ModuleName)
+	paramsKeeper.Subspace(ccvconsumertypes.ModuleName).WithKeyTable(ccv.ParamKeyTable())
 
 	// Can be removed as we are not using param subspace anymore anywhere
 	paramsKeeper.Subspace(assetprofilemoduletypes.ModuleName)
