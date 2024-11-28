@@ -303,7 +303,6 @@ func orderEndBlockers() []string {
 		// Note: epochs' endblock should be "real" end of epochs, we keep epochs endblock at the end
 		epochsmoduletypes.ModuleName,
 		ibcexported.ModuleName,
-		ccvconsumertypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		icatypes.ModuleName,
 		capabilitytypes.ModuleName,
@@ -337,6 +336,7 @@ func orderEndBlockers() []string {
 		estakingmoduletypes.ModuleName,
 		tiermoduletypes.ModuleName,
 		tradeshieldmoduletypes.ModuleName,
+		ccvconsumertypes.ModuleName,
 	}
 }
 
