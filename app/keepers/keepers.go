@@ -535,7 +535,7 @@ func NewAppKeeper(
 		app.AccountKeeper,
 		app.CommitmentKeeper,
 		app.EstakingKeeper,
-		authtypes.FeeCollectorName,
+		ccvconsumertypes.ConsumerRedistributeName,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
