@@ -2,8 +2,9 @@ package staking
 
 import (
 	"context"
-	"cosmossdk.io/core/appmodule"
 	"encoding/json"
+
+	"cosmossdk.io/core/appmodule"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -66,7 +67,11 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 
 // EndBlock delegates the EndBlock call to the underlying x/staking module,
 func (am AppModule) EndBlock(goCtx context.Context) ([]abci.ValidatorUpdate, error) {
-	return am.keeper.BlockValidatorUpdates(goCtx)
+	_, err := am.keeper.BlockValidatorUpdates(goCtx) // perform staking BlockValidatorUpdates
+	if err != nil {
+		return []abci.ValidatorUpdate{}, err
+	}
+	return []abci.ValidatorUpdate{}, err // return empty validator updates
 }
 
 // BeginBlock returns the begin blocker for the staking module.
