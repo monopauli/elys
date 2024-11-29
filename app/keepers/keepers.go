@@ -129,7 +129,6 @@ type AppKeepers struct {
 	CrisisKeeper     *crisiskeeper.Keeper
 	UpgradeKeeper    *upgradekeeper.Keeper
 	ParamsKeeper     paramskeeper.Keeper
-	ConsumerKeeper   ccvconsumerkeeper.Keeper
 
 	// IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
 	IBCKeeper             *ibckeeper.Keeper
@@ -145,7 +144,9 @@ type AppKeepers struct {
 	IBCFeeKeeper   ibcfeekeeper.Keeper
 	IBCHooksKeeper *ibchookskeeper.Keeper
 
-	//ConsumerKeeper ccvconsumerkeeper.Keeper
+	// CCV
+	ConsumerKeeper ccvconsumerkeeper.Keeper
+	ConsumerModule ccvconsumer.AppModule
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper           capabilitykeeper.ScopedKeeper
@@ -248,11 +249,11 @@ func NewAppKeeper(
 		app.memKeys[capabilitytypes.MemStoreKey],
 	)
 
-	app.ConsumerKeeper = ccvconsumerkeeper.NewNonZeroKeeper(
-		appCodec,
-		app.keys[ccvconsumertypes.StoreKey],
-		app.GetSubspace(ccvconsumertypes.ModuleName),
-	)
+	// app.ConsumerKeeper = ccvconsumerkeeper.NewNonZeroKeeper(
+	// 	appCodec,
+	// 	app.keys[ccvconsumertypes.StoreKey],
+	// 	app.GetSubspace(ccvconsumertypes.ModuleName),
+	// )
 
 	app.ScopedIBCKeeper = app.CapabilityKeeper.ScopeToModule(ibcexported.ModuleName)
 	app.ScopedICAHostKeeper = app.CapabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
@@ -380,11 +381,11 @@ func NewAppKeeper(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
-	//app.ConsumerKeeper = ccvconsumerkeeper.NewNonZeroKeeper(
-	//	appCodec,
-	//	app.keys[ccvconsumertypes.StoreKey],
-	//	app.GetSubspace(ccvconsumertypes.ModuleName),
-	//)
+	app.ConsumerKeeper = ccvconsumerkeeper.NewNonZeroKeeper(
+		appCodec,
+		app.keys[ccvconsumertypes.StoreKey],
+		app.GetSubspace(ccvconsumertypes.ModuleName),
+	)
 
 	// UpgradeKeeper must be created before IBCKeeper
 	app.IBCKeeper = ibckeeper.NewKeeper(
@@ -483,10 +484,15 @@ func NewAppKeeper(
 		&app.TransferKeeper,
 		app.IBCKeeper,
 		authtypes.FeeCollectorName,
-		app.IBCKeeper.GetAuthority(),
-		app.StakingKeeper.ValidatorAddressCodec(),
-		app.StakingKeeper.ConsensusAddressCodec(),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		address.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
+		address.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
+		//app.StakingKeeper.ValidatorAddressCodec(),
+		//app.StakingKeeper.ConsensusAddressCodec(),
 	)
+
+	app.ConsumerKeeper = *app.ConsumerKeeper.SetHooks(app.SlashingKeeper.Hooks())
+	app.ConsumerModule = ccvconsumer.NewAppModule(app.ConsumerKeeper, app.GetSubspace(ccvconsumertypes.ModuleName))
 
 	app.EpochsKeeper = epochsmodulekeeper.NewKeeper(
 		appCodec,
@@ -535,7 +541,7 @@ func NewAppKeeper(
 		app.AccountKeeper,
 		app.CommitmentKeeper,
 		app.EstakingKeeper,
-		ccvconsumertypes.ConsumerRedistributeName,
+		authtypes.FeeCollectorName,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
@@ -707,7 +713,7 @@ func NewAppKeeper(
 	transferStack = transferhook.NewIBCModule(app.TransferhookKeeper, transferStack)
 	transferStack = ibcfee.NewIBCMiddleware(transferStack, app.IBCFeeKeeper)
 
-	consumerModule := ccvconsumer.NewAppModule(app.ConsumerKeeper, app.GetSubspace(ccvconsumertypes.ModuleName))
+	//consumerModule := ccvconsumer.NewAppModule(app.ConsumerKeeper, app.GetSubspace(ccvconsumertypes.ModuleName))
 
 	// Create ICAHost Stack
 	var icaHostStack porttypes.IBCModule = icahost.NewIBCModule(app.ICAHostKeeper)
@@ -721,7 +727,7 @@ func NewAppKeeper(
 		AddRoute(icacontrollertypes.SubModuleName, icaControllerStack).
 		AddRoute(ibctransfertypes.ModuleName, transferStack).
 		AddRoute(oracletypes.ModuleName, oracleIBCModule).
-		AddRoute(ccvconsumertypes.ModuleName, consumerModule)
+		AddRoute(ccvconsumertypes.ModuleName, app.ConsumerModule)
 
 	app.IBCKeeper.SetRouter(ibcRouter)
 

@@ -90,7 +90,7 @@ import (
 	"github.com/elys-network/elys/x/transferhook"
 
 	//CCV modules
-	ccvconsumer "github.com/cosmos/interchain-security/v6/x/ccv/consumer"
+
 	ccvconsumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
 )
 
@@ -168,7 +168,7 @@ func appModules(
 		perpetualmodule.NewAppModule(appCodec, app.PerpetualKeeper, app.AccountKeeper, app.BankKeeper),
 		tiermodule.NewAppModule(appCodec, *app.TierKeeper, app.AccountKeeper, app.BankKeeper),
 		tradeshieldmodule.NewAppModule(appCodec, app.TradeshieldKeeper, app.AccountKeeper, app.BankKeeper),
-		ccvconsumer.NewAppModule(app.ConsumerKeeper, app.GetSubspace(ccvconsumertypes.ModuleName)),
+		//ccvconsumer.NewAppModule(app.ConsumerKeeper, app.GetSubspace(ccvconsumertypes.ModuleName)),
 	}
 }
 

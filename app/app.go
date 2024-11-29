@@ -49,7 +49,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/elys-network/elys/app/ante"
@@ -394,7 +393,7 @@ func (app *ElysApp) BlockedModuleAccountAddrs() map[string]bool {
 	// to send tokens to the provider chain
 	delete(modAccAddrs, authtypes.NewModuleAddress(
 		ccvconsumertypes.ConsumerToSendToProviderName).String())
-	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	//delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 
 	return modAccAddrs
 }
