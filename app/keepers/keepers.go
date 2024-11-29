@@ -539,7 +539,7 @@ func NewAppKeeper(
 		app.CommitmentKeeper,
 		app.EstakingKeeper,
 		// TODO We are changing the fee collector name, will this affect masterchef and estaking module?
-		authtypes.FeeCollectorName, // TODO it should be this or ccvconsumertypes.ConsumerRedistributeName?? What;s the impact on our token economics (fee distribution implemented in estaking/modules/distribution)
+		ccvconsumertypes.ConsumerRedistributeName, // TODO it should be this or ccvconsumertypes.ConsumerRedistributeName?? What;s the impact on our token economics (fee distribution implemented in estaking/modules/distribution)
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
