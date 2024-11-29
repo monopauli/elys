@@ -789,7 +789,7 @@ func NewAppKeeper(
 		),
 	)
 
-	app.ConsumerKeeper.SetHooks(app.SlashingKeeper.Hooks())
+	//app.ConsumerKeeper.SetHooks(app.SlashingKeeper.Hooks())
 
 	return app
 
