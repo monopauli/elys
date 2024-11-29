@@ -38,7 +38,6 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/cosmos/cosmos-sdk/x/slashing"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/ibc-go/modules/capability"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
@@ -51,7 +50,6 @@ import (
 	ibc "github.com/cosmos/ibc-go/v8/modules/core"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	ccvconsumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
 	accountedpoolmodule "github.com/elys-network/elys/x/accountedpool"
 	accountedpoolmoduletypes "github.com/elys-network/elys/x/accountedpool/types"
 	ammmodule "github.com/elys-network/elys/x/amm"
@@ -88,6 +86,10 @@ import (
 	tradeshieldmoduletypes "github.com/elys-network/elys/x/tradeshield/types"
 	"github.com/elys-network/elys/x/transferhook"
 	transferhooktypes "github.com/elys-network/elys/x/transferhook/types"
+
+	//CCV
+	ccvconsumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
+	ccvstaking "github.com/cosmos/interchain-security/v6/x/ccv/democracy/staking"
 )
 
 // module account permissions
@@ -196,7 +198,8 @@ func simulationModules(
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
-		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
+		//staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
+		ccvstaking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrtypes.ModuleName)),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, nil, app.GetSubspace(slashingtypes.ModuleName), app.interfaceRegistry),
 		params.NewAppModule(app.ParamsKeeper),
