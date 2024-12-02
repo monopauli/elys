@@ -10,11 +10,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	distr "github.com/cosmos/cosmos-sdk/x/distribution"
 	"github.com/cosmos/cosmos-sdk/x/distribution/exported"
 	"github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	distr "github.com/cosmos/interchain-security/v6/x/ccv/democracy/distribution"
 	assetprofilekeeper "github.com/elys-network/elys/x/assetprofile/keeper"
 	estakingkeeper "github.com/elys-network/elys/x/estaking/keeper"
 	ptypes "github.com/elys-network/elys/x/parameter/types"
@@ -59,7 +59,7 @@ func NewAppModule(
 	assetprofileKeeper *assetprofilekeeper.Keeper,
 	feeCollectorName string, subspace exported.Subspace,
 ) AppModule {
-	distrAppMod := distr.NewAppModule(cdc, keeper, ak, bk, sk, feeCollectorName, subspace)
+	distrAppMod := distr.NewAppModule(cdc, keeper, ak, bk, sk, subspace)
 	return AppModule{
 		AppModule:          distrAppMod,
 		keeper:             keeper,
