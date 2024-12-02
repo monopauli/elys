@@ -318,7 +318,6 @@ func orderEndBlockers() []string {
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
-		ccvconsumertypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		assetprofilemoduletypes.ModuleName,
 		oracletypes.ModuleName,
@@ -335,6 +334,7 @@ func orderEndBlockers() []string {
 		estakingmoduletypes.ModuleName,
 		tiermoduletypes.ModuleName,
 		tradeshieldmoduletypes.ModuleName,
+		ccvconsumertypes.ModuleName,
 	}
 }
 
