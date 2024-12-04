@@ -3,6 +3,7 @@ package keeper
 import (
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
+	ccvconsumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -12,11 +13,18 @@ import (
 )
 
 // EndBlocker of incentive module
-func (k Keeper) EndBlocker(ctx sdk.Context) {
+func (k Keeper) EndBlocker(ctx sdk.Context) error {
 	// Rewards distribution
-	k.ProcessRewardsDistribution(ctx)
+	err := k.ProcessRewardsDistribution(ctx)
+	if err != nil {
+		return err
+	}
 	// Burn EdenB tokens if staking changed
-	k.BurnEdenBIfElysStakingReduced(ctx)
+	err = k.BurnEdenBIfElysStakingReduced(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (k Keeper) TakeDelegationSnapshot(ctx sdk.Context, addr sdk.AccAddress) {
@@ -32,27 +40,28 @@ func (k Keeper) TakeDelegationSnapshot(ctx sdk.Context, addr sdk.AccAddress) {
 	k.SetElysStaked(ctx, elysStaked)
 }
 
-func (k Keeper) BurnEdenBIfElysStakingReduced(ctx sdk.Context) {
+func (k Keeper) BurnEdenBIfElysStakingReduced(ctx sdk.Context) error {
 	addrs := k.GetAllElysStakeChange(ctx)
 
 	// Handle addresses recorded on AfterDelegationModified
 	// This hook is exposed for genesis delegations as well
 	for _, delAddr := range addrs {
-		k.BurnEdenBFromElysUnstaking(ctx, delAddr)
+		err := k.BurnEdenBFromElysUnstaking(ctx, delAddr)
+		if err != nil {
+			return err
+		}
 		k.TakeDelegationSnapshot(ctx, delAddr)
 		k.RemoveElysStakeChange(ctx, delAddr)
 	}
+	return nil
 }
 
 // Rewards distribution
-func (k Keeper) ProcessRewardsDistribution(ctx sdk.Context) {
+func (k Keeper) ProcessRewardsDistribution(ctx sdk.Context) error {
 	// Read tokenomics time based inflation params and update incentive module params.
 	k.ProcessUpdateIncentiveParams(ctx)
 
-	err := k.UpdateStakersRewards(ctx)
-	if err != nil {
-		ctx.Logger().Error("Failed to update staker rewards unclaimed", "error", err)
-	}
+	return k.UpdateStakersRewards(ctx)
 }
 
 func (k Keeper) ProcessUpdateIncentiveParams(ctx sdk.Context) {
@@ -98,7 +107,7 @@ func (k Keeper) UpdateStakersRewards(ctx sdk.Context) error {
 	}
 
 	// USDC amount in math.LegacyDec type
-	feeCollectorAddr := authtypes.NewModuleAddress(authtypes.FeeCollectorName)
+	feeCollectorAddr := authtypes.NewModuleAddress(ccvconsumertypes.ConsumerRedistributeName)
 	totalFeesCollected := k.commKeeper.GetAllBalances(ctx, feeCollectorAddr)
 	gasFeeCollectedDec := sdk.NewDecCoinsFromCoins(totalFeesCollected...)
 	dexRevenueStakersAmount := gasFeeCollectedDec.AmountOf(baseCurrency)
@@ -117,7 +126,6 @@ func (k Keeper) UpdateStakersRewards(ctx sdk.Context) error {
 	}
 	stakersEdenAmount := edenAmountPerYear.Quo(math.NewInt(totalBlocksPerYear))
 
-	// Maximum eden APR - 30% by default
 	totalElysEdenEdenBStake, err := k.TotalBondedTokens(ctx)
 	if err != nil {
 		return err
@@ -128,6 +136,7 @@ func (k Keeper) UpdateStakersRewards(ctx sdk.Context) error {
 		return err
 	}
 
+	// Maximum eden APR - 30% by default
 	stakersMaxEdenAmount := params.MaxEdenRewardAprStakers.
 		MulInt(totalElysEdenStake).
 		QuoInt64(totalBlocksPerYear)
@@ -146,9 +155,14 @@ func (k Keeper) UpdateStakersRewards(ctx sdk.Context) error {
 	params.DexRewardsStakers.Amount = dexRevenueStakersAmount
 	k.SetParams(ctx, params)
 
-	coins := sdk.NewCoins(
-		sdk.NewCoin(ptypes.Eden, stakersEdenAmount),
+	providerEdenAmount := stakersEdenAmount.ToLegacyDec().Mul(params.ProviderStakingRewardsPortion).TruncateInt()
+	consumerCoins := sdk.NewCoins(
+		sdk.NewCoin(ptypes.Eden, stakersEdenAmount.Sub(providerEdenAmount)),
 		sdk.NewCoin(ptypes.EdenB, stakersEdenBAmount),
 	)
-	return k.commKeeper.MintCoins(ctx, authtypes.FeeCollectorName, coins.Sort())
+	err = k.commKeeper.MintCoins(ctx, ccvconsumertypes.ConsumerToSendToProviderName, sdk.NewCoins(sdk.NewCoin(ptypes.Eden, providerEdenAmount)))
+	if err != nil {
+		return err
+	}
+	return k.commKeeper.MintCoins(ctx, ccvconsumertypes.ConsumerRedistributeName, consumerCoins.Sort())
 }

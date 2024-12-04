@@ -2,15 +2,25 @@ package types
 
 import (
 	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"gopkg.in/yaml.v2"
+	ptypes "github.com/elys-network/elys/x/parameter/types"
 )
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
 	return Params{
-		VestingInfos:   nil,
+		VestingInfos: []VestingInfo{
+			{
+				BaseDenom:      ptypes.Eden,
+				VestingDenom:   ptypes.Elys,
+				NumBlocks:      1576800,
+				VestNowFactor:  math.NewInt(90),
+				NumMaxVestings: 10000,
+			},
+		},
 		TotalCommitted: sdk.Coins{},
 	}
 }
@@ -48,15 +58,4 @@ func (vestingInfo VestingInfo) Validate() error {
 		return fmt.Errorf("vesting now factor must be positive")
 	}
 	return nil
-}
-
-// Validate validates the set of params
-func (p LegacyParams) Validate() error {
-	return nil
-}
-
-// String implements the Stringer interface.
-func (p LegacyParams) String() string {
-	out, _ := yaml.Marshal(p)
-	return string(out)
 }

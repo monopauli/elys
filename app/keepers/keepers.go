@@ -606,6 +606,7 @@ func NewAppKeeper(
 		runtime.NewKVStoreService(app.keys[govtypes.StoreKey]),
 		app.AccountKeeper,
 		app.BankKeeper,
+		// No need to send EstakingKeeper here as gov only does sk.IterateBondedValidatorsByPower, no need to give vp to Eden and EdenB
 		app.StakingKeeper,
 		app.DistrKeeper,
 		bApp.MsgServiceRouter(),
@@ -650,6 +651,7 @@ func NewAppKeeper(
 		app.PerpetualKeeper,
 		app.LeveragelpKeeper,
 		app.StablestakeKeeper,
+		app.TradeshieldKeeper,
 	)
 	app.AmmKeeper.SetTierKeeper(app.TierKeeper)
 	app.PerpetualKeeper.SetTierKeeper(app.TierKeeper)
@@ -660,9 +662,10 @@ func NewAppKeeper(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		app.BankKeeper,
 		app.AmmKeeper,
-		app.TierKeeper,
 		app.PerpetualKeeper,
 	)
+
+	app.TierKeeper.SetTradeshieldKeeper(&app.TradeshieldKeeper)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
 
@@ -721,7 +724,7 @@ func NewAppKeeper(
 	app.EstakingKeeper.SetHooks(
 		stakingtypes.NewMultiStakingHooks(
 			// insert staking hooks receivers here
-			app.SlashingKeeper.Hooks(),
+			// Do not use slashing keeper hooks when it's consumer chain
 			app.DistrKeeper.Hooks(),
 			app.EstakingKeeper.StakingHooks(),
 			app.TierKeeper.StakingHooks(),
@@ -751,6 +754,7 @@ func NewAppKeeper(
 			app.CommitmentKeeper.Hooks(),
 			app.BurnerKeeper.Hooks(),
 			app.PerpetualKeeper.EpochHooks(),
+			app.EstakingKeeper.EpochHooks(),
 		),
 	)
 
