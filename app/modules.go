@@ -50,8 +50,6 @@ import (
 	ibc "github.com/cosmos/ibc-go/v8/modules/core"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	ccvconsumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
-	ccvgov "github.com/cosmos/interchain-security/v6/x/ccv/democracy/governance"
 	accountedpoolmodule "github.com/elys-network/elys/x/accountedpool"
 	accountedpoolmoduletypes "github.com/elys-network/elys/x/accountedpool/types"
 	ammmodule "github.com/elys-network/elys/x/amm"
